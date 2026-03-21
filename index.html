@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'">
+    <title>VocabForge</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#4a90d9">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="nav-bar">
+        <span class="nav-title">VocabForge</span>
+        <div class="nav-links">
+            <button class="nav-btn active" data-view="flashcard">閃卡</button>
+            <button class="nav-btn" data-view="quiz">複習</button>
+            <button class="nav-btn" data-view="dashboard">儀表板</button>
+        </div>
+    </nav>
+
+    <!-- View: Flashcard -->
+    <main id="view-flashcard" class="view active">
+        <div id="card-list" class="card-list">
+            <p class="loading-msg">載入圖卡中…</p>
+        </div>
+        <div id="flashcard" class="flashcard-container" hidden>
+            <div class="flashcard" id="flashcard-inner">
+                <div class="flashcard-front" id="card-front"></div>
+                <div class="flashcard-back" id="card-back"></div>
+            </div>
+            <div class="flashcard-actions">
+                <button id="btn-flip" class="btn btn-primary">翻牌</button>
+                <button id="btn-next" class="btn" hidden>下一張</button>
+                <button id="btn-back-to-list" class="btn">返回列表</button>
+            </div>
+        </div>
+    </main>
+
+    <!-- View: Quiz (Review) -->
+    <main id="view-quiz" class="view" hidden>
+        <div id="quiz-container">
+            <p id="quiz-status" class="quiz-status"></p>
+            <div id="quiz-card" hidden>
+                <p id="quiz-sentence" class="quiz-sentence"></p>
+                <div id="quiz-options" class="quiz-options"></div>
+                <div id="quiz-result" class="quiz-result" hidden></div>
+                <button id="btn-quiz-next" class="btn btn-primary" hidden>下一題</button>
+            </div>
+        </div>
+    </main>
+
+    <!-- View: Dashboard -->
+    <main id="view-dashboard" class="view" hidden>
+        <div id="dashboard-container">
+            <p class="loading-msg">載入統計中…</p>
+        </div>
+    </main>
+
+    <script src="leitner.js"></script>
+    <script src="app.js"></script>
+    <script src="dashboard.js"></script>
+    <script>
+        // Navigation
+        document.querySelectorAll('.nav-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                var target = btn.getAttribute('data-view');
+                document.querySelectorAll('.nav-btn').forEach(function(b) { b.classList.remove('active'); });
+                btn.classList.add('active');
+                document.querySelectorAll('.view').forEach(function(v) { v.hidden = true; v.classList.remove('active'); });
+                var view = document.getElementById('view-' + target);
+                view.hidden = false;
+                view.classList.add('active');
+                if (target === 'dashboard' && typeof renderDashboard === 'function') {
+                    renderDashboard();
+                }
+                if (target === 'quiz' && typeof initQuizView === 'function') {
+                    initQuizView();
+                }
+            });
+        });
+        // Service Worker registration
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js');
+        }
+    </script>
+</body>
+</html>

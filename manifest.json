@@ -1,0 +1,16 @@
+{
+    "name": "VocabForge — 圖卡複習系統",
+    "short_name": "VocabForge",
+    "description": "AI 驅動的英文單字圖卡間隔複習 PWA",
+    "start_url": ".",
+    "display": "standalone",
+    "background_color": "#ffffff",
+    "theme_color": "#4a90d9",
+    "icons": [
+        {
+            "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%234a90d9'/><text x='50' y='68' font-size='50' text-anchor='middle' fill='white'>V</text></svg>",
+            "sizes": "any",
+            "type": "image/svg+xml"
+        }
+    ]
+}
