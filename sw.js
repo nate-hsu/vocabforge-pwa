@@ -2,7 +2,7 @@
 // SDD §6.2 FE-03: 僅快取同源資源
 // D10 FS SS-PWA-010: Cache First (HTML/JS/CSS/cards), Network First (index)
 
-const CACHE_VERSION = 'vocabforge-v5';
+const CACHE_VERSION = 'vocabforge-v6';
 const CORE_ASSETS = [
     './',
     './index.html',

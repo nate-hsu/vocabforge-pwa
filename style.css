@@ -156,6 +156,11 @@ body {
     align-items: center;
 }
 
+.card-overlay-front[hidden],
+.card-overlay-back[hidden] {
+    display: none;
+}
+
 .card-overlay-back {
     align-items: flex-start;
 }
