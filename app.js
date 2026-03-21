@@ -153,7 +153,10 @@ function renderFront(card) {
     wordEl.textContent = card.word;
     front.appendChild(wordEl);
 
-    // 🔊 發音按鈕
+    // 按鈕列（🔊 + 翻牌 + 返回列表）
+    var actions = document.createElement('div');
+    actions.className = 'card-actions';
+
     var speakBtn = document.createElement('button');
     speakBtn.className = 'btn btn-speak';
     speakBtn.textContent = '🔊';
@@ -162,7 +165,27 @@ function renderFront(card) {
         e.stopPropagation();
         speak(card.word);
     });
-    front.appendChild(speakBtn);
+    actions.appendChild(speakBtn);
+
+    var flipBtn = document.createElement('button');
+    flipBtn.className = 'btn btn-primary';
+    flipBtn.textContent = '翻牌';
+    flipBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        flipCard();
+    });
+    actions.appendChild(flipBtn);
+
+    var backBtn = document.createElement('button');
+    backBtn.className = 'btn';
+    backBtn.textContent = '返回列表';
+    backBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        backToList();
+    });
+    actions.appendChild(backBtn);
+
+    front.appendChild(actions);
 }
 
 /**
@@ -231,6 +254,30 @@ function renderBack(card) {
         formalEl.textContent = card.formal_usage;
         back.appendChild(formalEl);
     }
+
+    // 底部按鈕列（翻回 + 返回列表）
+    var actions = document.createElement('div');
+    actions.className = 'card-actions';
+
+    var flipBtn = document.createElement('button');
+    flipBtn.className = 'btn btn-primary';
+    flipBtn.textContent = '翻回';
+    flipBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        flipCard();
+    });
+    actions.appendChild(flipBtn);
+
+    var backBtn = document.createElement('button');
+    backBtn.className = 'btn';
+    backBtn.textContent = '返回列表';
+    backBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        backToList();
+    });
+    actions.appendChild(backBtn);
+
+    back.appendChild(actions);
 }
 
 // ---------- Speech Synthesizer ----------
@@ -489,9 +536,6 @@ async function handleQuizAnswer(word, isCorrect, clickedBtn, optionsEl, detail) 
 async function initFlashcardView() {
     allCards = await loadIndex();
     renderCardList(allCards);
-
-    document.getElementById('btn-flip').addEventListener('click', flipCard);
-    document.getElementById('btn-back-to-list').addEventListener('click', backToList);
 
     // Quiz next button
     document.getElementById('btn-quiz-next').addEventListener('click', function() {
