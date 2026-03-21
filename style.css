@@ -124,49 +124,45 @@ body {
     font-size: 0.9rem;
 }
 
-/* ========== Expanded Card (inline in list) ========== */
+/* ========== Card Overlay ========== */
 
-.expanded-card {
-    display: block;
-    width: 100%;
+.card-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 200;
+    background: #f5f7fa;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 3.5rem 1rem 2rem;
+    animation: overlayIn 0.25s ease;
+}
+
+.card-overlay-content {
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.card-overlay-front,
+.card-overlay-back {
     background: #fff;
     border-radius: 16px;
     box-shadow: 0 4px 16px rgba(0,0,0,0.08);
     padding: 2rem 1.5rem;
-    margin-bottom: 0.5rem;
-    overflow: visible;
-    animation: expandIn 0.3s ease;
-}
-
-.expanded-front {
     display: flex;
     flex-direction: column;
     align-items: center;
 }
 
-.expanded-back {
-    display: flex;
-    flex-direction: column;
+.card-overlay-back {
     align-items: flex-start;
 }
 
-.card-list-item.active {
-    border-color: #4a90d9;
-    background: #eef4fb;
-    margin-bottom: 0;
-    border-bottom-left-radius: 0;
-    border-bottom-right-radius: 0;
-}
-
-.card-list-item.active + .expanded-card {
-    border-top-left-radius: 0;
-    border-top-right-radius: 0;
-    margin-top: 0;
-}
-
-@keyframes expandIn {
-    from { opacity: 0; max-height: 0; padding: 0 1.5rem; }
-    to { opacity: 1; max-height: 800px; padding: 2rem 1.5rem; }
+@keyframes overlayIn {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
 .card-image {

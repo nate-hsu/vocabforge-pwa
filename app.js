@@ -342,51 +342,13 @@ async function openCard(word) {
         return;
     }
 
-    // 先收合前一張展開的卡片
-    backToList();
-
-    // 建立展開區塊
-    var expanded = document.createElement('div');
-    expanded.className = 'expanded-card';
-    expanded.id = 'expanded-card';
-
-    var frontDiv = document.createElement('div');
-    frontDiv.className = 'expanded-front';
-    frontDiv.id = 'card-front';
-    expanded.appendChild(frontDiv);
-
-    var backDiv = document.createElement('div');
-    backDiv.className = 'expanded-back';
-    backDiv.id = 'card-back';
-    backDiv.hidden = true;
-    expanded.appendChild(backDiv);
-
-    // 找到被點擊的列表項目，在其後插入展開區塊
-    var container = document.getElementById('card-list');
-    var items = container.querySelectorAll('.card-list-item');
-    var clickedItem = null;
-    for (var i = 0; i < items.length; i++) {
-        if (items[i].getAttribute('data-word') === word) {
-            clickedItem = items[i];
-            break;
-        }
-    }
-
-    if (clickedItem) {
-        clickedItem.classList.add('active');
-        clickedItem.after(expanded);
-    } else {
-        container.appendChild(expanded);
-    }
-
-    // 渲染正反面內容
     renderFront(currentCard);
     renderBack(currentCard);
 
-    // 捲動到展開的卡片
-    setTimeout(function() {
-        expanded.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    }, 50);
+    // 顯示覆蓋層
+    var overlay = document.getElementById('card-overlay');
+    overlay.hidden = false;
+    overlay.scrollTop = 0;
 
     // 新字進入 box 1（若 leitner.js 已載入）
     if (typeof startNewCard === 'function') {
@@ -403,18 +365,22 @@ function flipCard() {
         front.hidden = isFlipped;
         back.hidden = !isFlipped;
     }
+    // 翻牌後捲回頂部
+    var overlay = document.getElementById('card-overlay');
+    if (overlay) overlay.scrollTop = 0;
 }
 
-/** 收合展開的卡片 */
+/** 關閉卡片覆蓋層，返回列表 */
 function backToList() {
-    var expanded = document.getElementById('expanded-card');
-    if (expanded) expanded.remove();
-    var activeItems = document.querySelectorAll('.card-list-item.active');
-    for (var i = 0; i < activeItems.length; i++) {
-        activeItems[i].classList.remove('active');
-    }
+    var overlay = document.getElementById('card-overlay');
+    if (overlay) overlay.hidden = true;
     currentCard = null;
     isFlipped = false;
+    // 重設正反面
+    var front = document.getElementById('card-front');
+    var back = document.getElementById('card-back');
+    if (front) { front.hidden = false; front.textContent = ''; }
+    if (back) { back.hidden = true; back.textContent = ''; }
 }
 
 // ---------- Quiz View ----------
