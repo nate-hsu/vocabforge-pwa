@@ -9,6 +9,7 @@ const CORE_ASSETS = [
     './app.js',
     './leitner.js',
     './dashboard.js',
+    './main.js',
     './style.css',
     './manifest.json'
 ];

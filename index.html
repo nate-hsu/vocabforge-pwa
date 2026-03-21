@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; script-src 'self'; style-src 'self' 'unsafe-inline'">
     <title>VocabForge</title>
     <link rel="stylesheet" href="style.css">
     <link rel="manifest" href="manifest.json">
@@ -63,29 +63,6 @@
     <script src="leitner.js"></script>
     <script src="app.js"></script>
     <script src="dashboard.js"></script>
-    <script>
-        // Navigation
-        document.querySelectorAll('.nav-btn').forEach(function(btn) {
-            btn.addEventListener('click', function() {
-                var target = btn.getAttribute('data-view');
-                document.querySelectorAll('.nav-btn').forEach(function(b) { b.classList.remove('active'); });
-                btn.classList.add('active');
-                document.querySelectorAll('.view').forEach(function(v) { v.hidden = true; v.classList.remove('active'); });
-                var view = document.getElementById('view-' + target);
-                view.hidden = false;
-                view.classList.add('active');
-                if (target === 'dashboard' && typeof renderDashboard === 'function') {
-                    renderDashboard();
-                }
-                if (target === 'quiz' && typeof initQuizView === 'function') {
-                    initQuizView();
-                }
-            });
-        });
-        // Service Worker registration
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js');
-        }
-    </script>
+    <script src="main.js"></script>
 </body>
 </html>
