@@ -21,7 +21,7 @@ body {
     color: #333;
     line-height: 1.6;
     min-height: 100vh;
-    padding-bottom: 1rem;
+    padding-bottom: env(safe-area-inset-bottom, 1rem);
 }
 
 /* ========== Navigation ========== */
@@ -130,6 +130,7 @@ body {
 .flashcard-container {
     perspective: 1000px;
     margin-top: 1rem;
+    padding-bottom: 4rem;
 }
 
 .flashcard {
@@ -252,6 +253,8 @@ body {
     gap: 0.75rem;
     justify-content: center;
     margin-top: 1.5rem;
+    position: relative;
+    z-index: 10;
 }
 
 /* ========== Buttons ========== */
