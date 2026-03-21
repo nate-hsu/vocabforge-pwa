@@ -135,7 +135,6 @@ function renderFront(card) {
     var front = document.getElementById('card-front');
     front.textContent = '';
     isFlipped = false;
-    document.getElementById('flashcard-inner').classList.remove('flipped');
 
     // 圖片（僅 image_status=success）
     if (card.image_status === 'success') {
@@ -325,6 +324,7 @@ function renderCardList(cards) {
             meaningSpan.className = 'card-list-meaning';
             meaningSpan.textContent = card.meaning;
             item.appendChild(meaningSpan);
+            item.setAttribute('data-word', card.word);
             item.addEventListener('click', function() { openCard(card.word); });
             container.appendChild(item);
         })(cards[i]);
@@ -341,12 +341,52 @@ async function openCard(word) {
     } catch (e) {
         return;
     }
+
+    // 先收合前一張展開的卡片
+    backToList();
+
+    // 建立展開區塊
+    var expanded = document.createElement('div');
+    expanded.className = 'expanded-card';
+    expanded.id = 'expanded-card';
+
+    var frontDiv = document.createElement('div');
+    frontDiv.className = 'expanded-front';
+    frontDiv.id = 'card-front';
+    expanded.appendChild(frontDiv);
+
+    var backDiv = document.createElement('div');
+    backDiv.className = 'expanded-back';
+    backDiv.id = 'card-back';
+    backDiv.hidden = true;
+    expanded.appendChild(backDiv);
+
+    // 找到被點擊的列表項目，在其後插入展開區塊
+    var container = document.getElementById('card-list');
+    var items = container.querySelectorAll('.card-list-item');
+    var clickedItem = null;
+    for (var i = 0; i < items.length; i++) {
+        if (items[i].getAttribute('data-word') === word) {
+            clickedItem = items[i];
+            break;
+        }
+    }
+
+    if (clickedItem) {
+        clickedItem.classList.add('active');
+        clickedItem.after(expanded);
+    } else {
+        container.appendChild(expanded);
+    }
+
+    // 渲染正反面內容
     renderFront(currentCard);
     renderBack(currentCard);
 
-    document.getElementById('card-list').hidden = true;
-    document.getElementById('flashcard').hidden = false;
-    document.getElementById('btn-next').hidden = true;
+    // 捲動到展開的卡片
+    setTimeout(function() {
+        expanded.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 50);
 
     // 新字進入 box 1（若 leitner.js 已載入）
     if (typeof startNewCard === 'function') {
@@ -354,21 +394,25 @@ async function openCard(word) {
     }
 }
 
-/** 翻牌切換 */
+/** 翻牌切換（正面 ↔ 背面 show/hide） */
 function flipCard() {
     isFlipped = !isFlipped;
-    var inner = document.getElementById('flashcard-inner');
-    if (isFlipped) {
-        inner.classList.add('flipped');
-    } else {
-        inner.classList.remove('flipped');
+    var front = document.getElementById('card-front');
+    var back = document.getElementById('card-back');
+    if (front && back) {
+        front.hidden = isFlipped;
+        back.hidden = !isFlipped;
     }
 }
 
-/** 返回列表 */
+/** 收合展開的卡片 */
 function backToList() {
-    document.getElementById('flashcard').hidden = true;
-    document.getElementById('card-list').hidden = false;
+    var expanded = document.getElementById('expanded-card');
+    if (expanded) expanded.remove();
+    var activeItems = document.querySelectorAll('.card-list-item.active');
+    for (var i = 0; i < activeItems.length; i++) {
+        activeItems[i].classList.remove('active');
+    }
     currentCard = null;
     isFlipped = false;
 }
