@@ -296,15 +296,98 @@ function speak(word) {
 
 // ---------- Card List & Navigation ----------
 
+var currentFilter = 'all';
+
+/**
+ * 取得單字的學習狀態分類。
+ * @param {string} word
+ * @param {Object} stateMap - word → leitner_state 的映射
+ * @returns {{ category: string, label: string, cssClass: string }}
+ */
+function getCardStatus(word, stateMap) {
+    var state = stateMap[word];
+    if (!state || state.box === 0) {
+        return { category: 'new', label: '新', cssClass: 'badge-new' };
+    }
+    if (state.graduated) {
+        return { category: 'mastered', label: '已掌握 ✓', cssClass: 'badge-mastered' };
+    }
+    if (state.box <= 2) {
+        return { category: 'learning', label: '學習中', cssClass: 'badge-learning' };
+    }
+    return { category: 'reviewing', label: '複習中', cssClass: 'badge-reviewing' };
+}
+
+/**
+ * 渲染篩選按鈕列。
+ * @param {Object} counts - { all, new, learning, reviewing, mastered }
+ */
+function renderFilterBar(counts) {
+    var existing = document.getElementById('filter-bar');
+    if (existing) existing.remove();
+
+    var bar = document.createElement('div');
+    bar.id = 'filter-bar';
+    bar.className = 'filter-bar';
+
+    var filters = [
+        { key: 'all', label: '全部', count: counts.all },
+        { key: 'new', label: '新字', count: counts['new'] },
+        { key: 'learning', label: '學習中', count: counts.learning },
+        { key: 'reviewing', label: '複習中', count: counts.reviewing },
+        { key: 'mastered', label: '已掌握', count: counts.mastered }
+    ];
+
+    for (var i = 0; i < filters.length; i++) {
+        (function(f) {
+            var btn = document.createElement('button');
+            btn.className = 'filter-btn' + (currentFilter === f.key ? ' active' : '');
+            btn.textContent = f.label + ' (' + f.count + ')';
+            btn.addEventListener('click', function() {
+                currentFilter = f.key;
+                renderCardListWithStatus();
+            });
+            bar.appendChild(btn);
+        })(filters[i]);
+    }
+
+    var container = document.getElementById('card-list');
+    container.parentNode.insertBefore(bar, container);
+}
+
+/**
+ * 渲染圖卡清單（含狀態 badge 與篩選）。
+ */
+async function renderCardListWithStatus() {
+    await initLeitner();
+    var allStates = await dbGetAll(STORE_LEITNER);
+    var stateMap = {};
+    for (var i = 0; i < allStates.length; i++) {
+        stateMap[allStates[i].word] = allStates[i];
+    }
+
+    var counts = { all: allCards.length, 'new': 0, learning: 0, reviewing: 0, mastered: 0 };
+    var categorized = [];
+    for (var j = 0; j < allCards.length; j++) {
+        var status = getCardStatus(allCards[j].word, stateMap);
+        counts[status.category]++;
+        categorized.push({ card: allCards[j], status: status });
+    }
+
+    renderFilterBar(counts);
+    renderCardList(categorized, currentFilter);
+}
+
 /**
  * 渲染圖卡清單供使用者選擇。
- * @param {Card[]} cards
+ * @param {{ card: Card, status: { category: string, label: string, cssClass: string } }[]} items
+ * @param {string} filter
  */
-function renderCardList(cards) {
+function renderCardList(items, filter) {
     var container = document.getElementById('card-list');
     container.textContent = '';
 
-    if (cards.length === 0) {
+    if (items.length === 0) {
         var empty = document.createElement('p');
         empty.className = 'empty-msg';
         empty.textContent = '尚無圖卡。請先透過 CLI 生產圖卡。';
@@ -312,22 +395,39 @@ function renderCardList(cards) {
         return;
     }
 
-    for (var i = 0; i < cards.length; i++) {
-        (function(card) {
+    var shown = 0;
+    for (var i = 0; i < items.length; i++) {
+        (function(entry) {
+            if (filter && filter !== 'all' && entry.status.category !== filter) return;
+            shown++;
             var item = document.createElement('button');
             item.className = 'card-list-item';
             var wordSpan = document.createElement('span');
             wordSpan.className = 'card-list-word';
-            wordSpan.textContent = card.word;
+            wordSpan.textContent = entry.card.word;
             item.appendChild(wordSpan);
+            var rightGroup = document.createElement('span');
+            rightGroup.className = 'card-list-right';
             var meaningSpan = document.createElement('span');
             meaningSpan.className = 'card-list-meaning';
-            meaningSpan.textContent = card.meaning;
-            item.appendChild(meaningSpan);
-            item.setAttribute('data-word', card.word);
-            item.addEventListener('click', function() { openCard(card.word); });
+            meaningSpan.textContent = entry.card.meaning;
+            rightGroup.appendChild(meaningSpan);
+            var badge = document.createElement('span');
+            badge.className = 'card-badge ' + entry.status.cssClass;
+            badge.textContent = entry.status.label;
+            rightGroup.appendChild(badge);
+            item.appendChild(rightGroup);
+            item.setAttribute('data-word', entry.card.word);
+            item.addEventListener('click', function() { openCard(entry.card.word); });
             container.appendChild(item);
-        })(cards[i]);
+        })(items[i]);
+    }
+
+    if (shown === 0) {
+        var noMatch = document.createElement('p');
+        noMatch.className = 'empty-msg';
+        noMatch.textContent = '此分類目前沒有字卡。';
+        container.appendChild(noMatch);
     }
 }
 
@@ -376,6 +476,8 @@ function backToList() {
     if (overlay) overlay.hidden = true;
     currentCard = null;
     isFlipped = false;
+    // 重新渲染列表以更新狀態 badge
+    renderCardListWithStatus();
     // 重設正反面
     var front = document.getElementById('card-front');
     var back = document.getElementById('card-back');
@@ -545,7 +647,7 @@ async function handleQuizAnswer(word, isCorrect, clickedBtn, optionsEl, detail) 
  */
 async function initFlashcardView() {
     allCards = await loadIndex();
-    renderCardList(allCards);
+    await renderCardListWithStatus();
 
     // Quiz next button
     document.getElementById('btn-quiz-next').addEventListener('click', function() {
