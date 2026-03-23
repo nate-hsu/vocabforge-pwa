@@ -1,7 +1,8 @@
 // VocabForge PWA — LeitnerEngine + QuizEngine
 
 // 萊特納間隔常數（SDD §4.6）：index = box number
-var LEITNER_INTERVALS = [0, 0, 1, 3, 7, 14];
+// Box 1=1天, Box 2=2天, Box 3=4天, Box 4=7天, Box 5=14天（遺忘曲線指數遞增）
+var LEITNER_INTERVALS = [0, 1, 2, 4, 7, 14];
 
 var DB_NAME = 'vocabforge';
 var DB_VERSION = 1;
@@ -124,20 +125,23 @@ function todayStr() {
 
 /**
  * 計算兩個日期字串之間的天數差。
- * @param {string} dateStr - ISO 8601 日期字串
+ * 正規化為 YYYY-MM-DD 以避免時間戳精度問題（相容舊的 ISO 時間戳格式）。
+ * @param {string} dateStr - YYYY-MM-DD 或 ISO 8601 日期字串
  * @returns {number}
  */
 function daysSince(dateStr) {
-    var then = new Date(dateStr);
-    var now = new Date(todayStr());
-    return Math.floor((now - then) / (1000 * 60 * 60 * 24));
+    // 正規化：取前 10 字元（YYYY-MM-DD），相容舊的完整 ISO 時間戳
+    var thenStr = dateStr.slice(0, 10);
+    var then = new Date(thenStr + 'T00:00:00');
+    var now = new Date(todayStr() + 'T00:00:00');
+    return Math.round((now - then) / (1000 * 60 * 60 * 24));
 }
 
 /**
  * 依 LEITNER_INTERVALS 計算今日到期字卡清單。
  * 對齊 SDD §4.6, BR-PWA-007, BR-PWA-010, BR-PWA-012。
- * - box 1: 每次開啟皆到期 (interval_days=0)
- * - box 2-5: daysSince(last_reviewed) >= LEITNER_INTERVALS[box]
+ * - box 1-5: daysSince(last_reviewed) >= LEITNER_INTERVALS[box]
+ * - last_reviewed=null（新字首次進入）→ 視為到期
  * - graduated=true 的字不出現
  * @returns {Promise<string[]>}
  */
@@ -151,19 +155,14 @@ async function getDueWords() {
         if (state.graduated) continue;
         // box 0 = 新字尚未進入複習
         if (state.box === 0) continue;
-        // box 1: 每次皆到期
-        if (state.box === 1) {
+        // last_reviewed 為 null → 從未複習，立即到期
+        if (!state.last_reviewed) {
             due.push(state.word);
             continue;
         }
-        // box 2-5: 計算間隔
-        if (state.last_reviewed) {
-            var elapsed = daysSince(state.last_reviewed);
-            if (elapsed >= LEITNER_INTERVALS[state.box]) {
-                due.push(state.word);
-            }
-        } else {
-            // last_reviewed 為 null（不應發生在 box>1，但防禦性處理）
+        // box 1-5: 統一以間隔天數判斷是否到期
+        var elapsed = daysSince(state.last_reviewed);
+        if (elapsed >= LEITNER_INTERVALS[state.box]) {
             due.push(state.word);
         }
     }
@@ -187,7 +186,7 @@ async function promote(word) {
     } else {
         state.box = state.box + 1;
     }
-    state.last_reviewed = new Date().toISOString();
+    state.last_reviewed = todayStr();
     await dbPut(STORE_LEITNER, state);
 }
 
@@ -203,7 +202,7 @@ async function demote(word) {
     if (!state) return;
     state.box = 1;
     state.mistake_count = (state.mistake_count || 0) + 1;
-    state.last_reviewed = new Date().toISOString();
+    state.last_reviewed = todayStr();
     await dbPut(STORE_LEITNER, state);
 }
 
