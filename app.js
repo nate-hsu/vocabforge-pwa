@@ -35,6 +35,18 @@ async function loadIndex() {
     return cards;
 }
 
+// ---------- Filename Sanitization (mirrors writer.py _sanitize_filename) ----------
+
+/**
+ * 消毒檔名：小寫、空格轉連字號、僅保留 [a-z0-9-]。
+ * 對齊 writer.py _sanitize_filename (D9 SecAD §9.1 CR-06)。
+ * @param {string} word
+ * @returns {string}
+ */
+function sanitizeFilename(word) {
+    return word.toLowerCase().replace(/ /g, '-').replace(/[^a-z0-9-]/g, '');
+}
+
 // ---------- Card Detail Loader ----------
 
 /**
@@ -67,7 +79,7 @@ function parseFrontmatter(frontmatter) {
  * @returns {Promise<CardDetail>}
  */
 async function loadCard(word) {
-    var res = await fetch('vocab-cards/' + encodeURIComponent(word) + '.md');
+    var res = await fetch('vocab-cards/' + encodeURIComponent(sanitizeFilename(word)) + '.md');
     if (!res.ok) throw new Error('Card not found: ' + word);
     var text = await res.text();
 
@@ -139,7 +151,7 @@ function renderFront(card) {
     // 圖片（僅 image_status=success）
     if (card.image_status === 'success') {
         var img = document.createElement('img');
-        img.src = 'vocab-cards/' + encodeURIComponent(card.word) + '.png';
+        img.src = 'vocab-cards/' + encodeURIComponent(sanitizeFilename(card.word)) + '.png';
         img.alt = card.word;
         img.className = 'card-image';
         img.onerror = function() { img.style.display = 'none'; };
@@ -540,10 +552,17 @@ async function showQuizQuestion() {
     if (detail && detail.example_sentences.length > 0) {
         // BR-PWA-017: 例句中目標字以粗體標記
         var sentence = detail.example_sentences[0];
-        var regex = new RegExp('(' + word + '[a-z]*)', 'gi');
-        var parts = sentence.split(regex);
+        // 建立詞幹：移除所有格 's，去掉尾部 e/y 以覆蓋規則變化形
+        var clean = word.toLowerCase().replace(/'s\b/g, '');
+        var stem = clean.replace(/[ey]$/, '');
+        if (stem.length < 3) stem = clean;
+        var escaped = stem.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        var splitRe = new RegExp('(\\b' + escaped + "[a-z']*)", 'gi');
+        var matchRe = new RegExp('^' + escaped, 'i');
+        var parts = sentence.split(splitRe);
         for (var i = 0; i < parts.length; i++) {
-            if (parts[i].toLowerCase().indexOf(word.toLowerCase()) === 0) {
+            if (!parts[i]) continue;
+            if (matchRe.test(parts[i])) {
                 var bold = document.createElement('strong');
                 bold.className = 'quiz-highlight';
                 bold.textContent = parts[i];
